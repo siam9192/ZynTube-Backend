@@ -5,11 +5,11 @@ import authController from './auth.controller';
 
 const router = Router();
 
-
-router.post("/google-callback",validateRequest(authValidation.googleCallback),authController.googleCallback)
-
-
-
+router.post(
+  '/google-callback',
+  validateRequest(authValidation.googleCallback),
+  authController.googleCallback
+);
 
 const authRouter = router;
 

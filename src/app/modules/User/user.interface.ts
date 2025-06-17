@@ -1,25 +1,3 @@
-import { Document } from 'mongoose';
-import { IModelNecessaryFields } from '../../types/model.type';
-
-export interface IUser extends IModelNecessaryFields {
-  email: string;
-  role:EUserRole
-  setupStatus:boolean
-  lastLoginAt: Date;
-  status: EUserStatus;
-}
-
-export enum EUserRole {
- USER = 'user'
-}
-
-export enum EUserStatus {
-  ACTIVE = 'active',
-  BLOCKED = 'blocked',
-  DELETED = 'deleted',
-}
-
-
 export interface IGoogleUser {
   sub: string;
   name: string;
@@ -27,4 +5,10 @@ export interface IGoogleUser {
   picture: string;
   given_name: string;
   family_name: string;
+}
+
+export interface ISetupUserProfilePayload {
+  channelName: string;
+  channelUniqueName: string;
+  channelProfilePhotoUrl: string;
 }

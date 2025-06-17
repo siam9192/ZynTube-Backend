@@ -1,3 +1,5 @@
+import { UserRole } from '../generated/prisma';
+
 export const paginationOptionKeys = ['page', 'limit', 'sortBy', 'sortOrder'];
 
 export const allStatus = {
@@ -14,3 +16,5 @@ export const allStatus = {
   RETURNED: 'Returned',
   REJECTED: 'Rejected',
 };
+
+export const ALL_USER = Object.values(UserRole);

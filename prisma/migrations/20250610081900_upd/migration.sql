@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "channels" ALTER COLUMN "about" DROP NOT NULL,
+ALTER COLUMN "status" SET DEFAULT 'ACTIVE';
+
+-- AlterTable
+ALTER TABLE "users" ALTER COLUMN "status" SET DEFAULT 'ACTIVE';

@@ -1,66 +1,71 @@
 import { NextFunction, Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
-
 import AppError from '../Errors/AppError';
-
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import { EUserStatus, TUserRole } from '../modules/User/user.interface';
 import httpStatus from '../shared/http-status';
-import envConfig from '../config/env.config';
-import User from '../modules/User/user.model';
-import { IAuthUser } from '../types';
+import { UserRole, UserStatus } from '../generated/prisma';
+import prisma from '../prisma';
+import { IGoogleUser } from '../modules/User/user.interface';
 
-function auth(...requiredRoles: TUserRole[]) {
+function auth(...requiredRoles: UserRole[]) {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
     // checking if the token is missing
     if (!token) {
-      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+      throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized  user!');
     }
 
-    // checking if the given token is valid
-    let decoded;
+    const userInfoUrl = 'https://www.googleapis.com/oauth2/v3/userinfo';
 
-    try {
-      decoded = jwt.verify(token, envConfig.jwt.accessTokenSecret as string) as IAuthUser &
-        JwtPayload;
-    } catch (error) {
-      throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized');
+    const response = await fetch(userInfoUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to fetch Google user info');
     }
 
-    const { role, userId, iat } = decoded;
+    const userData: IGoogleUser = await response.json();
+
     // checking if the user is exist
-    const user = await User.findById(userId);
+    const user = await prisma.user.findFirst({
+      where: {
+        email: userData.email,
+        status: {
+          not: UserStatus.DELETED,
+        },
+      },
+      include: {
+        sessions: true,
+      },
+    });
 
     if (!user) {
-      throw new AppError(httpStatus.NOT_FOUND, 'This user is not found !');
-    }
-    // checking if the user is already deleted
-    if (user.status === EUserStatus.DELETED) {
-      throw new AppError(httpStatus.FORBIDDEN, 'This user is deleted ! !');
+      throw new AppError(httpStatus.UNAUTHORIZED, 'User not found!');
     }
 
     // checking if the user is blocked
-
-    if (user.status === EUserStatus.BLOCKED) {
-      throw new AppError(httpStatus.FORBIDDEN, 'This user is blocked ! !');
+    if (user.status === UserStatus.BLOCKED) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'User is blocked');
     }
 
-    // if (
-    //   user.passwordChangedAt &&
-    //   User.isJWTIssuedBeforePasswordChanged(
-    //     user.passwordChangedAt,
-    //     iat as number,
-    //   )
-    // ) {
-    //   throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized !');
-    // }
+    const { id, email, role } = user;
+
+    // Check session
+    if (user.sessions.length) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid session');
+    }
 
     if (requiredRoles && !requiredRoles.includes(role)) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized  !');
     }
 
-    req.user = decoded;
+    req.user = {
+      id,
+      email,
+      role,
+    };
 
     next();
   });

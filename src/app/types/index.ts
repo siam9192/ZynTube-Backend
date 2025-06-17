@@ -1,5 +1,6 @@
 import e from 'express';
 import { EUserRole } from '../type';
+import { UserRole } from '../generated/prisma';
 
 export interface IFbDataResponse {
   id: string;
@@ -30,8 +31,9 @@ export interface IPaginationOptions {
 
 export interface IAuthUser {
   userId: string;
+  sessionId: string;
   profileId: string;
-  role: EUserRole;
+  role: UserRole;
 }
 export type TBookPermission = {
   canAdd: boolean;

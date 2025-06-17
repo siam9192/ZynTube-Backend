@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+
+model User {
+  id String @id @default(cuid())
+  email String 
+  role UserRole 
+  channel Channel?
+  setupStatus Boolean @default(false)
+  lastLoginAt DateTime
+  status UserStatus @default(ACTIVE)
+  sessions Session[]
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  @@map("users")
+}
+
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  sessionToken String   @unique
+  device SessionDevice? 
+  browser String @default("Unknown")
+  ip String @default("Unknown")
+  userAgent String?
+  lastSeen      DateTime
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  @@index([sessionToken])
+  @@index([userId])
+  @@map("sessions")
+}
+
+model SessionDevice {
+ sessionId String @id
+ session Session @relation(fields: [sessionId],references: [id])
+ name String @db.VarChar(50)
+ type DeviceType @default(UNKNOWN)
+ osName String @default("Unknown")
+ osVersion String  @default("Unknown")
+ @@map("sessions_device")
+}
+
+model Channel {
+    id String @id @default(cuid())
+    userId String @unique
+    user User @relation(fields: [userId], references:[id])
+    name String @db.VarChar(20)
+    uniqueName String @unique
+    profilePhotoUrl String
+    profileCoverPhotoUrl String?
+    about String?  @db.VarChar(2000)
+    viewsCount BigInt @default(0)
+    videos Video[]
+    status ChannelStatus @default(ACTIVE)
+    updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+    @@map("channels")
+}
+
+model  Video {
+  id String @id @default(cuid())
+  channelId String
+  channel Channel @relation(fields: [channelId],references: [id])
+  url String?
+  muxId String?
+  title String @db.VarChar(100)
+  description String? @db.VarChar(5000)
+  viewsCount BigInt @default(0)
+  likesCount BigInt  @default(0)
+  dislikesCount BigInt  @default(0)
+  privacy VideoPrivacy @default(PUBLIC)
+  status VideoStatus
+  deleted Boolean @default(false)
+  @@map("videos")
+}
+
+
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+
+enum UserStatus {
+ ACTIVE
+ BLOCKED
+ DELETED
+}
+
+enum DeviceType {
+  MOBILE
+  TABLET
+  DESKTOP
+  UNKNOWN
+}
+
+enum ChannelStatus {
+    ACTIVE 
+    INACTIVE
+    DELETED 
+    SUSPENDED
+}
+
+
+enum VideoPrivacy {
+  PUBLIC
+  PRIVATE
+}
+
+enum  VideoStatus {
+  PROCESSING
+  UPLOADED
+  UPLOAD_FAILED
+  BLOCKED
+}

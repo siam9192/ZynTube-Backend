@@ -1,45 +1,14 @@
-import { TContactInfo } from '../../types';
-import { TGender, TSemester } from '../../types/model.type';
-import { TShift } from '../Student/student.interface';
+import { DeviceType } from '../../generated/prisma';
 
-export interface ICreateStudentRegistrationRequestPayload {
-  fullName: string;
-  gender: TGender;
-  roll: number;
-  email: string;
-  departmentId: string;
-  semester: TSemester;
-  shift: TShift;
-  session: string;
-  password: string;
-}
-
-export interface IStudentRegistrationRequestTokenPayload {
-  email: string;
-  verificationId: string;
-  requestId: string;
-}
-
-export interface IStudentLoginPayload {
-  roll: number;
-  password: string;
-}
-
-export interface IManagementLoginPayload {
-  email: string;
-  password: string;
-}
-
-export interface IChangePasswordPayload {
-  oldPassword: string;
-  newPassword: string;
-}
-
-export interface IRegisterManagementAccountPayload {
-  fullName: string;
-  password: string;
-  gender: TGender;
-  profilePhotoUrl: string;
-  about: string;
-  contactInfo: TContactInfo;
+export interface IGoogleCallbackPayload {
+  accessToken: string;
+  browser: string;
+  ip: string;
+  userAgent: string;
+  device: {
+    name: string;
+    type: DeviceType;
+    osName: string;
+    osVersion: string;
+  };
 }
