@@ -12,3 +12,11 @@ export interface ISetupUserProfilePayload {
   channelUniqueName: string;
   channelProfilePhotoUrl: string;
 }
+
+export interface IUpdateUserProfilePayload {
+  channelName?: string;
+  channelUniqueName?: string;
+  profilePhotoUrl?: string;
+  coverPhotoUrl?: string;
+  about?: string;
+}

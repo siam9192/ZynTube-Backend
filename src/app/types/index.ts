@@ -1,5 +1,3 @@
-import e from 'express';
-import { EUserRole } from '../type';
 import { UserRole } from '../generated/prisma';
 
 export interface IFbDataResponse {
@@ -18,8 +16,8 @@ export interface IFbDataResponse {
 export type TEnvironment = `${EEnvironment}`;
 
 export enum EEnvironment {
-  Development = 'DEVELOPMENT',
-  Production = 'Production',
+  DEVELOPMENT = 'DEVELOPMENT',
+  PRODUCTION = 'PRODUCTION',
 }
 
 export interface IPaginationOptions {
@@ -31,8 +29,8 @@ export interface IPaginationOptions {
 
 export interface IAuthUser {
   userId: string;
+  email: string;
   sessionId: string;
-  profileId: string;
   role: UserRole;
 }
 export type TBookPermission = {

@@ -1,5 +1,7 @@
+import envConfig from '../../config/env.config';
 import AppError from '../../Errors/AppError';
 import { UserRole, UserStatus } from '../../generated/prisma';
+import jwtHelpers from '../../helpers/jwtHelpers';
 import prisma from '../../prisma';
 import httpStatus from '../../shared/http-status';
 import { IGoogleUser } from '../User/user.interface';
@@ -20,7 +22,7 @@ class AuthService {
 
     const userData: IGoogleUser = await response.json();
 
-    const result = prisma.$transaction(async (txClient) => {
+    const result = await prisma.$transaction(async (txClient) => {
       let user;
 
       const existingUser = await prisma.user.findFirst({
@@ -29,6 +31,9 @@ class AuthService {
           status: {
             not: UserStatus.DELETED,
           },
+        },
+        include: {
+          sessions: true,
         },
       });
 
@@ -69,7 +74,6 @@ class AuthService {
       const createdSession = await txClient.session.create({
         data: {
           userId: user.id,
-          sessionToken: payload.accessToken,
           browser: payload.browser,
           ip: payload.ip,
           userAgent: payload.userAgent,
@@ -79,13 +83,42 @@ class AuthService {
           lastSeen: new Date(),
         },
       });
+
+      user.sessions.push(createdSession);
+
       return {
         sessionId: createdSession.id,
         user,
       };
     });
+    const user = result.user;
 
-    return result;
+    if (user.status === UserStatus.BLOCKED) {
+      throw new AppError(httpStatus.FORBIDDEN, 'This account is blocked');
+    }
+
+    const tokenPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      sessionId: result.sessionId,
+    };
+
+    const accessToken = jwtHelpers.generateToken(
+      tokenPayload,
+      envConfig.jwt.accessTokenSecret as string,
+      envConfig.jwt.accessTokenExpireTime as string
+    );
+    const refreshToken = jwtHelpers.generateToken(
+      tokenPayload,
+      envConfig.jwt.refreshTokenSecret as string,
+      envConfig.jwt.refreshTokenExpireTime as string
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+    };
   }
 }
 

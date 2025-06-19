@@ -4,41 +4,34 @@ import AppError from '../Errors/AppError';
 import httpStatus from '../shared/http-status';
 import { UserRole, UserStatus } from '../generated/prisma';
 import prisma from '../prisma';
-import { IAuthUser } from '../types';
-import jwtHelpers from '../helpers/jwtHelpers';
-import envConfig from '../config/env.config';
-import { JwtPayload } from 'jsonwebtoken';
+import { IGoogleUser } from '../modules/User/user.interface';
 
-function auth(requiredRoles: UserRole[], authConfig?: { providerMode: Boolean }) {
+function auth(...requiredRoles: UserRole[]) {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
-
     // checking if the token is missing
     if (!token) {
-      if (authConfig?.providerMode === true) {
-        return next();
-      }
-      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
+      throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized  user!');
     }
 
-    // checking if the given token is valid
-    let decoded;
-    try {
-      decoded = jwtHelpers.verifyToken(
-        token,
-        envConfig.jwt.accessTokenSecret as string
-      ) as JwtPayload & IAuthUser;
-    } catch (error) {
-      if (authConfig?.providerMode) return next();
-      throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized');
+    const userInfoUrl = 'https://www.googleapis.com/oauth2/v3/userinfo';
+
+    const response = await fetch(userInfoUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to fetch Google user info');
     }
 
-    const { userId, email, role, sessionId } = decoded;
+    const userData: IGoogleUser = await response.json();
 
     // checking if the user is exist
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: {
-        id: userId,
+        email: userData.email,
         status: {
           not: UserStatus.DELETED,
         },
@@ -57,6 +50,8 @@ function auth(requiredRoles: UserRole[], authConfig?: { providerMode: Boolean })
       throw new AppError(httpStatus.UNAUTHORIZED, 'User is blocked');
     }
 
+    const { id, email, role } = user;
+
     // Check session
     if (user.sessions.length === 0) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid session');
@@ -66,13 +61,11 @@ function auth(requiredRoles: UserRole[], authConfig?: { providerMode: Boolean })
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized  !');
     }
 
-    const reqUser: IAuthUser = {
-      sessionId,
-      userId,
+    req.user = {
+      userId: id,
       email,
       role,
     };
-    req.user = reqUser;
 
     next();
   });

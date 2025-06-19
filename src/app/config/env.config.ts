@@ -67,6 +67,11 @@ const envConfig = {
     success_redirect_url: process.env.PAYMENT_SUCCESS_REDIRECT_URL,
     token_secret: process.env.PAYMENT_TOKEN_SECRET,
   },
+  imagekit: {
+    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+    publickey: process.env.IMAGEKIT_PUBLIC_KEY,
+    privatekey: process.env.IMAGEKIT_PRIVATE_KEY,
+  },
 };
 
 export default envConfig;

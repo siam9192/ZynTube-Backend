@@ -1,5 +1,8 @@
 import { IRouter, Router } from 'express';
 import authRouter from '../modules/Auth/auth.route';
+import userRouter from '../modules/User/user.route';
+import channelRouter from '../modules/Channel/channel.route';
+import imagekitRouter from '../modules/Imagekit/imagekit.route';
 
 type TModuleRoutes = { path: string; router: IRouter }[];
 const router = Router();
@@ -7,6 +10,18 @@ const moduleRoutes: TModuleRoutes = [
   {
     path: '/auth',
     router: authRouter,
+  },
+  {
+    path: '/users',
+    router: userRouter,
+  },
+  {
+    path: '/channels',
+    router: channelRouter,
+  },
+  {
+    path: '/imagekit',
+    router: imagekitRouter,
   },
 ];
 

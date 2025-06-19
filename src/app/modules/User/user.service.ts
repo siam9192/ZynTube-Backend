@@ -2,7 +2,7 @@ import AppError from '../../Errors/AppError';
 import prisma from '../../prisma';
 import httpStatus from '../../shared/http-status';
 import { IAuthUser } from '../../types';
-import { ISetupUserProfilePayload } from './user.interface';
+import { ISetupUserProfilePayload, IUpdateUserProfilePayload } from './user.interface';
 
 class UserService {
   async getMeFromDB(authUser: IAuthUser) {
@@ -22,6 +22,7 @@ class UserService {
     if (!user) {
       throw new AppError(httpStatus.NOT_FOUND, 'User not found');
     }
+
     return user;
   }
 
@@ -31,14 +32,21 @@ class UserService {
         id: authUser.userId,
       },
     });
+
     if (!user) throw new AppError(httpStatus.BAD_GATEWAY, 'Bad Gateway');
     if (user.setupStatus) {
       throw new AppError(httpStatus.BAD_REQUEST, 'Your account is already set upped');
     }
 
+    let uniqueName = payload.channelUniqueName;
+    if (!uniqueName.startsWith('@')) {
+      uniqueName = '@' + uniqueName.replace('@', '');
+    }
+
+    uniqueName = uniqueName.toLowerCase();
     const channelExistByUniqueName = await prisma.channel.findUnique({
       where: {
-        uniqueName: payload.channelUniqueName,
+        uniqueName: uniqueName,
       },
     });
 
@@ -51,7 +59,7 @@ class UserService {
         data: {
           userId: authUser.userId,
           name: payload.channelName,
-          uniqueName: payload.channelUniqueName,
+          uniqueName: uniqueName,
           profilePhotoUrl: payload.channelProfilePhotoUrl,
         },
       });
@@ -73,6 +81,7 @@ class UserService {
       },
     });
   }
+  async updateUserIntoDB(authUser: IAuthUser, payload: IUpdateUserProfilePayload) {}
 }
 
 export default new UserService();

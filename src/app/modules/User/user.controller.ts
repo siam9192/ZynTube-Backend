@@ -13,7 +13,7 @@ class UserController {
       data: result,
     });
   });
-  setUpUserProfile = catchAsync(async (req: Request, res: Response) => {
+  setupUserProfile = catchAsync(async (req: Request, res: Response) => {
     const result = await userService.setupProfileIntoDB(req.user, req.body);
     sendSuccessResponse(res, {
       statusCode: httpStatus.OK,
