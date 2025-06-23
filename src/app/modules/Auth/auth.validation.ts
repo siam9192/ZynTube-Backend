@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { DeviceType } from '../../generated/prisma';
+import { DeviceType } from '../../../../prisma/generated/client';
+
 
 const googleCallback = z.object({
   accessToken: z.string().min(1, 'Access token is required'),

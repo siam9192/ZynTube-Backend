@@ -1,4 +1,5 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from "../../../prisma/generated/client";
+
 
 export default new PrismaClient({
   transactionOptions: {

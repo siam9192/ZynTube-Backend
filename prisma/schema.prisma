@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/app/generated/prisma"
+  output   = "./generated/client"
 }
 
 datasource db {
@@ -19,9 +19,10 @@ model User {
   lastLoginAt DateTime
   status UserStatus @default(ACTIVE)
   sessions Session[]
+  profileChanges ProfileChange?
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
-  @@map("users")
+  @@map("user")
 }
 
 
@@ -37,7 +38,7 @@ model Session {
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
   @@index([userId])
-  @@map("sessions")
+  @@map("session")
 }
 
 model SessionDevice {
@@ -47,7 +48,7 @@ model SessionDevice {
  type DeviceType @default(UNKNOWN)
  osName String @default("Unknown")
  osVersion String  @default("Unknown")
- @@map("sessions_device")
+ @@map("session_device")
 }
 
 model Channel {
@@ -64,24 +65,70 @@ model Channel {
     status ChannelStatus @default(ACTIVE)
     updatedAt DateTime @updatedAt
     createdAt DateTime @default(now())
-    @@map("channels")
+    @@map("channel")
 }
+
+model ProfileChange {
+  userId                     String   @id
+  user User @relation(fields: [userId],references: [id])
+  lastChannelNameChange     DateTime @default(now())
+  lastChannelUniqueNameChange DateTime @default(now())
+  lastChannelAboutChange DateTime @default(now())
+  lastProfilePhotoChange    DateTime @default(now())
+  lastCoverPhotoChange      DateTime @default(now())
+  @@map("profile_change")
+}
+
 
 model  Video {
   id String @id @default(cuid())
   channelId String
   channel Channel @relation(fields: [channelId],references: [id])
-  url String?
-  muxId String?
   title String @db.VarChar(100)
   description String? @db.VarChar(5000)
-  viewsCount Int @default(0)
-  likesCount Int  @default(0)
-  dislikesCount Int  @default(0)
-  privacy VideoPrivacy @default(PUBLIC)
-  status VideoStatus
+  resolutionTier Int?
+  duration Int?
+  aspectRatio String? 
+  media VideoMedia?
+  state VideoStat?
+  status VideoStatus @default(PROCESSING)
+  setting VideoSetting?
   deleted Boolean @default(false)
-  @@map("videos")
+  @@map("video")
+}
+
+model VideoMedia {
+  videoId       String  @id
+  video Video @relation(fields: [videoId],references: [id],onDelete: Cascade)
+  muxAssetId String?
+  muxPlaybackId String?
+  imagekitId String
+  videoUrl String?
+  thumbnailUrl String
+  @@map("video_media")
+}
+
+model VideoStat {
+  videoId       String  @id
+  viewsCount    Int     @default(0)
+  likesCount    Int     @default(0)
+  dislikesCount Int     @default(0)
+  // Relations
+  video         Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  @@map("video_state")
+}
+
+model VideoSetting {
+  videoId          String           @id
+  disableComments  Boolean          @default(false)
+  commentAudience  CommentAudience @default(EVERYONE)
+  disableLikes     Boolean          @default(false)
+  disableSharing   Boolean          @default(false)
+  privacy VideoPrivacy @default(PUBLIC)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  video            Video            @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  @@map("video_setting")
 }
 
 
@@ -125,3 +172,10 @@ enum  VideoStatus {
   UPLOAD_FAILED
   BLOCKED
 }
+
+enum CommentAudience {
+  EVERYONE
+  SUBSCRIBERS
+  NONE
+}
+

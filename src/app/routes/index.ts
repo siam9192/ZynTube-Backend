@@ -3,6 +3,7 @@ import authRouter from '../modules/Auth/auth.route';
 import userRouter from '../modules/User/user.route';
 import channelRouter from '../modules/Channel/channel.route';
 import imagekitRouter from '../modules/Imagekit/imagekit.route';
+import videoRouter from '../modules/Video/video.route';
 
 type TModuleRoutes = { path: string; router: IRouter }[];
 const router = Router();
@@ -18,6 +19,10 @@ const moduleRoutes: TModuleRoutes = [
   {
     path: '/channels',
     router: channelRouter,
+  },
+  {
+    path: '/videos',
+    router: videoRouter,
   },
   {
     path: '/imagekit',

@@ -21,6 +21,14 @@ class UserController {
       data: result,
     });
   });
+  updateProfile = catchAsync(async (req: Request, res: Response) => {
+    const result = await userService.updateUserIntoDB(req.user, req.body);
+    sendSuccessResponse(res, {
+      statusCode: httpStatus.OK,
+      message: 'Profile updated successfully',
+      data: result,
+    });
+  });
 }
 
 export default new UserController();

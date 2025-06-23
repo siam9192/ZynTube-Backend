@@ -2,12 +2,12 @@ import { NextFunction, Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../Errors/AppError';
 import httpStatus from '../shared/http-status';
-import { UserRole, UserStatus } from '../generated/prisma';
 import prisma from '../prisma';
 import { IAuthUser } from '../types';
 import jwtHelpers from '../helpers/jwtHelpers';
 import envConfig from '../config/env.config';
 import { JwtPayload } from 'jsonwebtoken';
+import { UserRole, UserStatus } from '../../../prisma/generated/client';
 
 function auth(requiredRoles: UserRole[], authConfig?: { providerMode: Boolean }) {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {

@@ -16,7 +16,7 @@ export interface ISetupUserProfilePayload {
 export interface IUpdateUserProfilePayload {
   channelName?: string;
   channelUniqueName?: string;
-  profilePhotoUrl?: string;
-  coverPhotoUrl?: string;
-  about?: string;
+  channelProfilePhotoUrl?: string;
+  channelProfileCoverPhotoUrl?: string;
+  channelAbout?: string;
 }

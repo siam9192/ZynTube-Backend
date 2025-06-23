@@ -1,0 +1,182 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  email          String
+  role           UserRole
+  channel        Channel?
+  setupStatus    Boolean        @default(false)
+  lastLoginAt    DateTime
+  status         UserStatus     @default(ACTIVE)
+  sessions       Session[]
+  profileChanges ProfileChange?
+  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime       @default(now())
+
+  @@map("user")
+}
+
+model Session {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  device    SessionDevice?
+  browser   String         @default("Unknown")
+  ip        String         @default("Unknown")
+  userAgent String?
+  lastSeen  DateTime
+  updatedAt DateTime       @updatedAt
+  createdAt DateTime       @default(now())
+
+  @@index([userId])
+  @@map("session")
+}
+
+model SessionDevice {
+  sessionId String     @id
+  session   Session    @relation(fields: [sessionId], references: [id])
+  name      String     @db.VarChar(50)
+  type      DeviceType @default(UNKNOWN)
+  osName    String     @default("Unknown")
+  osVersion String     @default("Unknown")
+
+  @@map("session_device")
+}
+
+model Channel {
+  id                   String        @id @default(cuid())
+  userId               String        @unique
+  user                 User          @relation(fields: [userId], references: [id])
+  name                 String        @db.VarChar(20)
+  uniqueName           String        @unique
+  profilePhotoUrl      String
+  profileCoverPhotoUrl String?
+  about                String?       @db.VarChar(2000)
+  viewsCount           Int           @default(0)
+  videos               Video[]
+  status               ChannelStatus @default(ACTIVE)
+  updatedAt            DateTime      @updatedAt
+  createdAt            DateTime      @default(now())
+
+  @@map("channel")
+}
+
+model ProfileChange {
+  userId                      String   @id
+  user                        User     @relation(fields: [userId], references: [id])
+  lastChannelNameChange       DateTime @default(now())
+  lastChannelUniqueNameChange DateTime @default(now())
+  lastChannelAboutChange      DateTime @default(now())
+  lastProfilePhotoChange      DateTime @default(now())
+  lastCoverPhotoChange        DateTime @default(now())
+
+  @@map("profile_change")
+}
+
+model Video {
+  id             String        @id @default(cuid())
+  channelId      String
+  channel        Channel       @relation(fields: [channelId], references: [id])
+  title          String        @db.VarChar(100)
+  description    String?       @db.VarChar(5000)
+  resolutionTier Int?
+  duration       Int?
+  aspectRatio    String?
+  media          VideoMedia?
+  state          VideoStat?
+  status         VideoStatus   @default(PROCESSING)
+  setting        VideoSetting?
+  deleted        Boolean       @default(false)
+
+  @@map("video")
+}
+
+model VideoMedia {
+  videoId       String  @id
+  video         Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  muxAssetId    String?
+  muxPlaybackId String?
+  imagekitId    String
+  videoUrl      String?
+  thumbnailUrl  String
+
+  @@map("video_media")
+}
+
+model VideoStat {
+  videoId       String @id
+  viewsCount    Int    @default(0)
+  likesCount    Int    @default(0)
+  dislikesCount Int    @default(0)
+  // Relations
+  video         Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@map("video_state")
+}
+
+model VideoSetting {
+  videoId         String          @id
+  disableComments Boolean         @default(false)
+  commentAudience CommentAudience @default(EVERYONE)
+  disableLikes    Boolean         @default(false)
+  disableSharing  Boolean         @default(false)
+  privacy         VideoPrivacy    @default(PUBLIC)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  video           Video           @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@map("video_setting")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+enum DeviceType {
+  MOBILE
+  TABLET
+  DESKTOP
+  UNKNOWN
+}
+
+enum ChannelStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+  SUSPENDED
+}
+
+enum VideoPrivacy {
+  PUBLIC
+  PRIVATE
+}
+
+enum VideoStatus {
+  PROCESSING
+  UPLOADED
+  UPLOAD_FAILED
+  BLOCKED
+}
+
+enum CommentAudience {
+  EVERYONE
+  SUBSCRIBERS
+  NONE
+}

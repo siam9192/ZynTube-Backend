@@ -2,9 +2,9 @@ import { NextFunction, Request, Response } from 'express';
 import catchAsync from '../utils/catchAsync';
 import AppError from '../Errors/AppError';
 import httpStatus from '../shared/http-status';
-import { UserRole, UserStatus } from '../generated/prisma';
 import prisma from '../prisma';
 import { IGoogleUser } from '../modules/User/user.interface';
+import { UserRole, UserStatus } from '../../../prisma/generated/client';
 
 function auth(...requiredRoles: UserRole[]) {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {

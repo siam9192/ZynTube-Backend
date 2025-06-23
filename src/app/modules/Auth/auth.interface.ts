@@ -1,4 +1,5 @@
-import { DeviceType } from '../../generated/prisma';
+import { DeviceType } from "../../../../prisma/generated/client";
+
 
 export interface IGoogleCallbackPayload {
   accessToken: string;

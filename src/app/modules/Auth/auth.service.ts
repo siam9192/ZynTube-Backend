@@ -1,6 +1,7 @@
+import { UserRole, UserStatus } from '../../../../prisma/generated/client';
 import envConfig from '../../config/env.config';
 import AppError from '../../Errors/AppError';
-import { UserRole, UserStatus } from '../../generated/prisma';
+
 import jwtHelpers from '../../helpers/jwtHelpers';
 import prisma from '../../prisma';
 import httpStatus from '../../shared/http-status';
@@ -59,6 +60,9 @@ class AuthService {
             role: UserRole.USER,
             lastLoginAt: new Date(),
             status: UserStatus.ACTIVE,
+            profileChanges: {
+              create: {},
+            },
           },
           include: {
             sessions: true,
