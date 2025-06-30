@@ -159,6 +159,7 @@ exports.Prisma.ChannelScalarFieldEnum = {
   profileCoverPhotoUrl: 'profileCoverPhotoUrl',
   about: 'about',
   viewsCount: 'viewsCount',
+  subscribersCount: 'subscribersCount',
   status: 'status',
   updatedAt: 'updatedAt',
   createdAt: 'createdAt'
@@ -182,7 +183,9 @@ exports.Prisma.VideoScalarFieldEnum = {
   duration: 'duration',
   aspectRatio: 'aspectRatio',
   status: 'status',
-  deleted: 'deleted'
+  deleted: 'deleted',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.VideoMediaScalarFieldEnum = {
@@ -208,6 +211,49 @@ exports.Prisma.VideoSettingScalarFieldEnum = {
   disableLikes: 'disableLikes',
   disableSharing: 'disableSharing',
   privacy: 'privacy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PlaylistScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  name: 'name',
+  userId: 'userId',
+  privacy: 'privacy',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.PlaylistVideoScalarFieldEnum = {
+  id: 'id',
+  playlistId: 'playlistId',
+  videoId: 'videoId',
+  addedAt: 'addedAt'
+};
+
+exports.Prisma.WatchHistoryVideoScalarFieldEnum = {
+  id: 'id',
+  videoId: 'videoId',
+  userId: 'userId',
+  watchedDuration: 'watchedDuration',
+  viewCount: 'viewCount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VideoReactionScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  videoId: 'videoId',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ChannelSubscriberScalarFieldEnum = {
+  id: 'id',
+  channelId: 'channelId',
+  subscriberId: 'subscriberId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -270,6 +316,21 @@ exports.VideoPrivacy = exports.$Enums.VideoPrivacy = {
   PRIVATE: 'PRIVATE'
 };
 
+exports.PlaylistType = exports.$Enums.PlaylistType = {
+  DEFAULT: 'DEFAULT',
+  CUSTOM: 'CUSTOM'
+};
+
+exports.Privacy = exports.$Enums.Privacy = {
+  PUBLIC: 'PUBLIC',
+  PRIVATE: 'PRIVATE'
+};
+
+exports.VideoReactionType = exports.$Enums.VideoReactionType = {
+  LIKE: 'LIKE',
+  DISLIKE: 'DISLIKE'
+};
+
 exports.Prisma.ModelName = {
   User: 'User',
   Session: 'Session',
@@ -279,7 +340,12 @@ exports.Prisma.ModelName = {
   Video: 'Video',
   VideoMedia: 'VideoMedia',
   VideoStat: 'VideoStat',
-  VideoSetting: 'VideoSetting'
+  VideoSetting: 'VideoSetting',
+  Playlist: 'Playlist',
+  PlaylistVideo: 'PlaylistVideo',
+  WatchHistoryVideo: 'WatchHistoryVideo',
+  VideoReaction: 'VideoReaction',
+  ChannelSubscriber: 'ChannelSubscriber'
 };
 
 /**

@@ -1,0 +1,3 @@
+interface ICreateChannelSubscriberPayload {
+  channelId: string;
+}

@@ -10,7 +10,7 @@ datasource db {
 }
 
 
-model User {
+ model User {
   id String @id @default(cuid())
   email String 
   role UserRole 
@@ -20,10 +20,13 @@ model User {
   status UserStatus @default(ACTIVE)
   sessions Session[]
   profileChanges ProfileChange?
+  channelSubscriptions ChannelSubscriber[]
+  playlists Playlist[]
+  watchHistoryVideos WatchHistoryVideo[]
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
   @@map("user")
-}
+ }
 
 
 model Session {
@@ -61,7 +64,9 @@ model Channel {
     profileCoverPhotoUrl String?
     about String?  @db.VarChar(2000)
     viewsCount Int @default(0)
+    subscribersCount Int @default(0)
     videos Video[]
+    subscribers ChannelSubscriber[]
     status ChannelStatus @default(ACTIVE)
     updatedAt DateTime @updatedAt
     createdAt DateTime @default(now())
@@ -86,14 +91,18 @@ model  Video {
   channel Channel @relation(fields: [channelId],references: [id])
   title String @db.VarChar(100)
   description String? @db.VarChar(5000)
-  resolutionTier Int?
+  resolutionTier String?
   duration Int?
   aspectRatio String? 
   media VideoMedia?
   state VideoStat?
   status VideoStatus @default(PROCESSING)
   setting VideoSetting?
+  playlist PlaylistVideo[]
+  watchHistories WatchHistoryVideo[]
   deleted Boolean @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt @default(now())
   @@map("video")
 }
 
@@ -131,7 +140,68 @@ model VideoSetting {
   @@map("video_setting")
 }
 
+model Playlist {
+  id        String       @id @default(cuid())
+  type      PlaylistType
+  name      String
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videos    PlaylistVideo[]
+  privacy Privacy @default(PRIVATE)
+  createdAt DateTime     @default(now())
+  @@unique([userId,name]) // Prevent duplicate default playlists per user
+  @@map("playlist")
+}
 
+model PlaylistVideo {
+  id        String   @id @default(cuid())
+  playlistId String
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  playlist  Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  addedAt   DateTime @default(now())
+  @@unique([playlistId, videoId])
+  @@map("playlist_video")
+}
+
+
+model WatchHistoryVideo {
+  id        String   @id @default(cuid())
+  videoId   String
+  userId String
+  watchedDuration Int @default(0) 
+  viewCount Int @default(0)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([videoId,userId])
+  @@map("watch_history_video")
+}
+
+model VideoReaction {
+ id        String       @id @default(cuid())
+ type VideoReactionType
+ videoId String
+ userId String
+ createdAt   DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@unique([videoId,userId])
+ @@map("video_reaction")
+}
+
+
+model ChannelSubscriber {
+  id           String   @id @default(cuid())
+  channelId    String
+  subscriberId String
+  channel      Channel  @relation(fields: [channelId], references: [id])
+  subscriber   User @relation(fields: [subscriberId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@unique([channelId, subscriberId])
+  @@map("channel_subscriber")
+}
 
 enum UserRole {
   USER
@@ -154,10 +224,10 @@ enum DeviceType {
 }
 
 enum ChannelStatus {
-    ACTIVE 
-    INACTIVE
-    DELETED 
-    SUSPENDED
+  ACTIVE 
+  INACTIVE
+  DELETED 
+  SUSPENDED
 }
 
 
@@ -179,3 +249,20 @@ enum CommentAudience {
   NONE
 }
 
+
+
+enum PlaylistType {
+  DEFAULT
+  CUSTOM
+}
+
+
+enum Privacy {
+  PUBLIC
+  PRIVATE
+}
+
+enum VideoReactionType {
+  LIKE
+  DISLIKE
+}

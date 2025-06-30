@@ -7,7 +7,7 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50 MB
 
 // Allowed extensions
-const allowedImageExts = ['.jpg', '.jpeg', '.png', '.gif','.jfif','.webp'];
+const allowedImageExts = ['.jpg', '.jpeg', '.png', '.gif', '.jfif', '.webp'];
 const allowedVideoExts = ['.mp4', '.mov', '.avi', '.webm'];
 
 // Multer storage setup
@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 // File filter
 const fileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
   const ext = path.extname(file.originalname).toLowerCase();
- 
+
   if (allowedImageExts.includes(ext) || allowedVideoExts.includes(ext)) {
     cb(null, true);
   } else {

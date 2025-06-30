@@ -72,6 +72,9 @@ const envConfig = {
     publickey: process.env.IMAGEKIT_PUBLIC_KEY,
     privatekey: process.env.IMAGEKIT_PRIVATE_KEY,
   },
+  mux: {
+    signingKey: process.env.MUX_SIGNING_KEY,
+  },
 };
 
 export default envConfig;

@@ -10,17 +10,19 @@ datasource db {
 }
 
 model User {
-  id             String         @id @default(cuid())
-  email          String
-  role           UserRole
-  channel        Channel?
-  setupStatus    Boolean        @default(false)
-  lastLoginAt    DateTime
-  status         UserStatus     @default(ACTIVE)
-  sessions       Session[]
-  profileChanges ProfileChange?
-  updatedAt      DateTime       @updatedAt
-  createdAt      DateTime       @default(now())
+  id                 String              @id @default(cuid())
+  email              String
+  role               UserRole
+  channel            Channel?
+  setupStatus        Boolean             @default(false)
+  lastLoginAt        DateTime
+  status             UserStatus          @default(ACTIVE)
+  sessions           Session[]
+  profileChanges     ProfileChange?
+  playlists          Playlist[]
+  watchHistoryVideos WatchHistoryVideo[]
+  updatedAt          DateTime            @updatedAt
+  createdAt          DateTime            @default(now())
 
   @@map("user")
 }
@@ -83,19 +85,23 @@ model ProfileChange {
 }
 
 model Video {
-  id             String        @id @default(cuid())
+  id             String              @id @default(cuid())
   channelId      String
-  channel        Channel       @relation(fields: [channelId], references: [id])
-  title          String        @db.VarChar(100)
-  description    String?       @db.VarChar(5000)
-  resolutionTier Int?
+  channel        Channel             @relation(fields: [channelId], references: [id])
+  title          String              @db.VarChar(100)
+  description    String?             @db.VarChar(5000)
+  resolutionTier String?
   duration       Int?
   aspectRatio    String?
   media          VideoMedia?
   state          VideoStat?
-  status         VideoStatus   @default(PROCESSING)
+  status         VideoStatus         @default(PROCESSING)
   setting        VideoSetting?
-  deleted        Boolean       @default(false)
+  playlist       PlaylistVideo[]
+  watchHistories WatchHistoryVideo[]
+  deleted        Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @default(now()) @updatedAt
 
   @@map("video")
 }
@@ -135,6 +141,59 @@ model VideoSetting {
   video           Video           @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@map("video_setting")
+}
+
+model Playlist {
+  id        String          @id @default(cuid())
+  type      PlaylistType
+  name      String
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videos    PlaylistVideo[]
+  privacy   Privacy         @default(PRIVATE)
+  createdAt DateTime        @default(now())
+
+  @@unique([userId, name]) // Prevent duplicate default playlists per user
+  @@map("playlist")
+}
+
+model PlaylistVideo {
+  id         String   @id @default(cuid())
+  playlistId String
+  videoId    String
+  video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  addedAt    DateTime @default(now())
+
+  @@unique([playlistId, videoId])
+  @@map("playlist_video")
+}
+
+model WatchHistoryVideo {
+  id              String   @id @default(cuid())
+  videoId         String
+  userId          String
+  watchedDuration Int      @default(0)
+  viewCount       Int      @default(0)
+  video           Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([videoId, userId])
+  @@map("watch_history_video")
+}
+
+model VideoLike {
+  id        String        @id @default(cuid())
+  type      VideoLikeType
+  videoId   String
+  userId    String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([videoId, userId])
+  @@map("video_likes")
 }
 
 enum UserRole {
@@ -179,4 +238,19 @@ enum CommentAudience {
   EVERYONE
   SUBSCRIBERS
   NONE
+}
+
+enum PlaylistType {
+  DEFAULT
+  CUSTOM
+}
+
+enum Privacy {
+  PUBLIC
+  PRIVATE
+}
+
+enum VideoLikeType {
+  LIKE
+  DISLIKE
 }

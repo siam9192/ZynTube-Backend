@@ -1,5 +1,4 @@
-import { UserRole } from "../../../prisma/generated/client";
-
+import { UserRole } from '../../../prisma/generated/client';
 
 export interface IFbDataResponse {
   id: string;

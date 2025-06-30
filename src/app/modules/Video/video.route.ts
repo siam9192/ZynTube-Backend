@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import upload from '../../middlewares/uploadMiddleWare';
 import videoController from './video.controller';
-import validateRequest from '../../middlewares/validateRequest';
-import videoValidation from './video.validation';
 import auth from '../../middlewares/auth';
 import { UserRole } from '../../../../prisma/generated/client';
 
@@ -14,11 +12,20 @@ router.post(
     { name: 'video', maxCount: 1 },
     { name: 'thumbnail', maxCount: 1 },
   ]),
-  validateRequest(videoValidation.createVideo),
   videoController.createVideo
 );
-router.post('/mux-webhook',videoController.muxWebhook)
+router.put('/:id', upload.single('thumbnail'), auth([UserRole.USER]), videoController.updateVideo);
+router.delete('/:id', auth([UserRole.USER]), videoController.deleteVideoById);
 
+router.get('/my', auth([UserRole.USER]), videoController.getMyVideos);
+router.get('/my/:id', auth([UserRole.USER]), videoController.getMyVideoById);
+router.get('/home-feed', videoController.getHomeFeedVideos);
+router.get(
+  '/watch/:id',
+  auth([UserRole.USER], { providerMode: true }),
+  videoController.getWatchVideo
+);
+router.get('/related/:id', videoController.getRelatedVideos);
 const videoRouter = router;
 
 export default videoRouter;

@@ -1,5 +1,4 @@
-import { UserRole } from "../../../prisma/generated/client";
-
+import { UserRole } from '../../../prisma/generated/client';
 
 export const paginationOptionKeys = ['page', 'limit', 'sortBy', 'sortOrder'];
 
