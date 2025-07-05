@@ -1,10 +1,9 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 const createSubscriber = z.object({
-    channelId:z.string().nonempty()
-})
-
+  channelId: z.string().nonempty(),
+});
 
 export default {
-    createSubscriber
-}
+  createSubscriber,
+};

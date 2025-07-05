@@ -10,19 +10,22 @@ datasource db {
 }
 
 model User {
-  id                 String              @id @default(cuid())
-  email              String
-  role               UserRole
-  channel            Channel?
-  setupStatus        Boolean             @default(false)
-  lastLoginAt        DateTime
-  status             UserStatus          @default(ACTIVE)
-  sessions           Session[]
-  profileChanges     ProfileChange?
-  playlists          Playlist[]
-  watchHistoryVideos WatchHistoryVideo[]
-  updatedAt          DateTime            @updatedAt
-  createdAt          DateTime            @default(now())
+  id                    String                 @id @default(cuid())
+  email                 String
+  role                  UserRole
+  channel               Channel?
+  setupStatus           Boolean                @default(false)
+  lastLoginAt           DateTime
+  status                UserStatus             @default(ACTIVE)
+  sessions              Session[]
+  profileChanges        ProfileChange?
+  channelSubscriptions  ChannelSubscriber[]
+  playlists             Playlist[]
+  watchHistoryVideos    WatchHistoryVideo[]
+  videoComments         VideoComment[]
+  videoCommentReactions VideoCommentReaction[]
+  updatedAt             DateTime               @updatedAt
+  createdAt             DateTime               @default(now())
 
   @@map("user")
 }
@@ -55,19 +58,21 @@ model SessionDevice {
 }
 
 model Channel {
-  id                   String        @id @default(cuid())
-  userId               String        @unique
-  user                 User          @relation(fields: [userId], references: [id])
-  name                 String        @db.VarChar(20)
-  uniqueName           String        @unique
+  id                   String              @id @default(cuid())
+  userId               String              @unique
+  user                 User                @relation(fields: [userId], references: [id])
+  name                 String              @db.VarChar(20)
+  uniqueName           String              @unique
   profilePhotoUrl      String
   profileCoverPhotoUrl String?
-  about                String?       @db.VarChar(2000)
-  viewsCount           Int           @default(0)
+  about                String?             @db.VarChar(2000)
+  viewsCount           Int                 @default(0)
+  subscribersCount     Int                 @default(0)
   videos               Video[]
-  status               ChannelStatus @default(ACTIVE)
-  updatedAt            DateTime      @updatedAt
-  createdAt            DateTime      @default(now())
+  subscribers          ChannelSubscriber[]
+  status               ChannelStatus       @default(ACTIVE)
+  updatedAt            DateTime            @updatedAt
+  createdAt            DateTime            @default(now())
 
   @@map("channel")
 }
@@ -99,6 +104,7 @@ model Video {
   setting        VideoSetting?
   playlist       PlaylistVideo[]
   watchHistories WatchHistoryVideo[]
+  comments       VideoComment[]
   deleted        Boolean             @default(false)
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @default(now()) @updatedAt
@@ -184,16 +190,70 @@ model WatchHistoryVideo {
   @@map("watch_history_video")
 }
 
-model VideoLike {
-  id        String        @id @default(cuid())
-  type      VideoLikeType
+model VideoReaction {
+  id        String            @id @default(cuid())
+  type      VideoReactionType
   videoId   String
   userId    String
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
 
   @@unique([videoId, userId])
-  @@map("video_likes")
+  @@map("video_reaction")
+}
+
+model ChannelSubscriber {
+  id           String   @id @default(cuid())
+  channelId    String
+  subscriberId String
+  channel      Channel  @relation(fields: [channelId], references: [id])
+  subscriber   User     @relation(fields: [subscriberId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([channelId, subscriberId])
+  @@map("channel_subscriber")
+}
+
+model VideoComment {
+  id      String @id @default(cuid())
+  content String @db.VarChar(5000)
+
+  likesCount    Int @default(0)
+  dislikesCount Int @default(0)
+
+  isPinned Boolean @default(false)
+  isHidden Boolean @default(false)
+
+  parentId String?
+  videoId  String
+  userId   String
+
+  parent    VideoComment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   VideoComment[]         @relation("CommentReplies")
+  reactions VideoCommentReaction[]
+
+  video Video @relation(fields: [videoId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("video_comment")
+}
+
+model VideoCommentReaction {
+  id        String            @id @default(cuid())
+  type      VideoReactionType
+  commentId String
+  userId    String
+  comment   VideoComment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([commentId, userId])
+  @@map("video_comment_reaction")
 }
 
 enum UserRole {
@@ -250,7 +310,7 @@ enum Privacy {
   PRIVATE
 }
 
-enum VideoLikeType {
+enum VideoReactionType {
   LIKE
   DISLIKE
 }

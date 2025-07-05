@@ -6,6 +6,7 @@ import imagekitRouter from '../modules/Imagekit/imagekit.route';
 import videoRouter from '../modules/Video/video.route';
 import videoReactionRouter from '../modules/VideoReaction/video-reaction.route';
 import channelSubscriberRouter from '../modules/ChannelSubscriber/channel-subscriber.route';
+import videoCommentRouter from '../modules/VideoComment/video-comment.route';
 
 type TModuleRoutes = { path: string; router: IRouter }[];
 const router = Router();
@@ -30,7 +31,11 @@ const moduleRoutes: TModuleRoutes = [
     path: '/video-reactions',
     router: videoReactionRouter,
   },
-   {
+  {
+    path: '/video-comments',
+    router: videoCommentRouter,
+  },
+  {
     path: '/channel-subscribers',
     router: channelSubscriberRouter,
   },

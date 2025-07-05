@@ -20,3 +20,10 @@ export enum ERelatedVideoType {
   FOR_YOU = 'for-you',
   THIS_CHANNEL = 'this-channel',
 }
+
+export interface IVideoSearchFilterPayload {
+  search_query?: string;
+  type?: 'all' | 'watched' | 'unwatched' | 'subscribed' | 'recent';
+  minDuration?: string;
+  maxDuration?: string;
+}

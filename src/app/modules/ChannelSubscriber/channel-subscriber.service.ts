@@ -60,9 +60,7 @@ class ChannelSubscriberService {
       });
     });
   }
-   async deleteSubscriberFromDB(authUser: IAuthUser, channelId:string) {
-
-    
+  async deleteSubscriberFromDB(authUser: IAuthUser, channelId: string) {
     const subscriberId = authUser.userId;
     const channel = await prisma.channel.findUnique({
       where: {
@@ -94,8 +92,8 @@ class ChannelSubscriberService {
       },
     });
     if (!existing) {
-  throw new AppError(httpStatus.FORBIDDEN, 'You are not subscribed to this channel');
-}
+      throw new AppError(httpStatus.FORBIDDEN, 'You are not subscribed to this channel');
+    }
 
     return await prisma.$transaction(async (tx) => {
       await tx.channel.update({
@@ -109,16 +107,15 @@ class ChannelSubscriberService {
         },
       });
       return await tx.channelSubscriber.delete({
-        where:{
-            channelId_subscriberId:{
-                channelId,
-                subscriberId
-            }
-        }
+        where: {
+          channelId_subscriberId: {
+            channelId,
+            subscriberId,
+          },
+        },
       });
     });
   }
 }
 
-
-export default new ChannelSubscriberService()
+export default new ChannelSubscriberService();

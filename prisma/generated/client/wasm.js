@@ -258,6 +258,29 @@ exports.Prisma.ChannelSubscriberScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.VideoCommentScalarFieldEnum = {
+  id: 'id',
+  content: 'content',
+  likesCount: 'likesCount',
+  dislikesCount: 'dislikesCount',
+  isPinned: 'isPinned',
+  isHidden: 'isHidden',
+  parentId: 'parentId',
+  videoId: 'videoId',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.VideoCommentReactionScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  commentId: 'commentId',
+  userId: 'userId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -345,7 +368,9 @@ exports.Prisma.ModelName = {
   PlaylistVideo: 'PlaylistVideo',
   WatchHistoryVideo: 'WatchHistoryVideo',
   VideoReaction: 'VideoReaction',
-  ChannelSubscriber: 'ChannelSubscriber'
+  ChannelSubscriber: 'ChannelSubscriber',
+  VideoComment: 'VideoComment',
+  VideoCommentReaction: 'VideoCommentReaction'
 };
 
 /**

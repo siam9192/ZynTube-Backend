@@ -2,8 +2,9 @@ import { paginationOptionPicker } from '../../helpers/paginationHelper';
 import muxClient from '../../mux';
 import httpStatus from '../../shared/http-status';
 import catchAsync from '../../utils/catchAsync';
+import Pick from '../../utils/pick';
 import { sendSuccessResponse } from '../../utils/response';
-import { ERelatedVideoType } from './video.interface';
+import { ERelatedVideoType, IVideoSearchFilterPayload } from './video.interface';
 import videoService from './video.service';
 import videoValidation from './video.validation';
 
@@ -113,6 +114,19 @@ class VideoController {
       message: 'Related videos retrieved successfully!',
       statusCode: httpStatus.OK,
       data: result,
+    });
+  });
+  getSearchVideos =  catchAsync(async (req, res) => {
+    const filterPayload =  Pick(req.query,['search_query','type','minDuration','maxDuration'])
+    const result = await videoService.getSearchVideosFromDB(
+      req.user,
+     filterPayload,
+     paginationOptionPicker(req.query)
+    );
+    sendSuccessResponse(res, {
+      message: 'Related videos retrieved successfully!',
+      statusCode: httpStatus.OK,
+      ...result,
     });
   });
 }

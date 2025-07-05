@@ -10,15 +10,51 @@ import AppError from '../../Errors/AppError';
 import httpStatus from '../../shared/http-status';
 import {
   ChannelStatus,
-  PlaylistType,
   Prisma,
-  Video,
   VideoPrivacy,
+  VideoReactionType,
   VideoStatus,
 } from '../../../../prisma/generated/client';
 import { calculatePagination } from '../../helpers/paginationHelper';
-import { ERelatedVideoType, ICreateVideoPayload, IUpdateVideoPayload } from './video.interface';
-import { EPlayListDefaultName } from '../Playlist/playlist.interface';
+import {
+  ERelatedVideoType,
+  ICreateVideoPayload,
+  IUpdateVideoPayload,
+  IVideoSearchFilterPayload,
+} from './video.interface';
+
+function formatToPublicVideo(
+  video: any,
+  other: {
+    isOwn: boolean;
+    reactionType: VideoReactionType | null;
+    isWatchLater: boolean;
+    isSaved: boolean;
+    isSubscribed: boolean;
+  }
+) {
+  const channel = video.channel;
+
+  return {
+    id: video.id,
+    title: video.title,
+    channel: {
+      id: channel.id,
+      name: channel.name,
+      uniqueName: channel.uniqueName,
+      profilePhotoUrl: channel.profilePhotoUrl,
+      isSubscribed: other.isSubscribed,
+    },
+    duration: video.duration,
+    media: video.media,
+    state: video.state,
+    createdAt: video.createdAt,
+    isOwn: other.isOwn,
+    reactionType: other.reactionType,
+    isWatchLater: other.isWatchLater,
+    isSaved: other.isSaved,
+  };
+}
 
 class VideoService {
   private myVideoInclude = {
@@ -369,80 +405,152 @@ class VideoService {
     category: string,
     paginationOptions: IPaginationOptions
   ) {
-    try {
-      const { page, skip, limit } = calculatePagination(paginationOptions, { limit: 20 });
-      const andCondition: Prisma.VideoWhereInput[] = [];
-      console.log(category);
-      if (category && category !== 'all') {
-        andCondition.push({
-          OR: [
-            {
-              title: {
-                contains: category,
-                mode: 'insensitive',
-              },
+    const { page, skip, limit } = calculatePagination(paginationOptions, { limit: 20 });
+    const andCondition: Prisma.VideoWhereInput[] = [];
+
+    if (category && category !== 'all') {
+      andCondition.push({
+        OR: [
+          {
+            title: {
+              contains: category,
+              mode: 'insensitive',
             },
-            {
-              description: {
-                contains: category,
-                mode: 'insensitive',
-              },
+          },
+          {
+            description: {
+              contains: category,
+              mode: 'insensitive',
             },
-          ],
-        });
-      }
+          },
+        ],
+      });
+    }
 
-      // Optional personalization logic
-      // if (authUser) {
-      //   // Example: exclude videos from blocked users or boost subscriptions
-      //   const subscriptions = await prisma.subscription.findMany({
-      //     where: {
-      //       subscriberId: authUser.userId,
-      //     },
-      //     select: {
-      //       channelId: true,
-      //     },
-      //   });
+    // Optional personalization logic
+    // if (authUser) {
+    //   // Example: exclude videos from blocked users or boost subscriptions
+    //   const subscriptions = await prisma.subscription.findMany({
+    //     where: {
+    //       subscriberId: authUser.userId,
+    //     },
+    //     select: {
+    //       channelId: true,
+    //     },
+    //   });
 
-      //   const subscribedChannelIds = subscriptions.map(sub => sub.channelId);
-      //   whereCondition.OR = [
-      //     { channelId: { in: subscribedChannelIds } },
-      //     { recommended: true }, // Example fallback
-      //   ];
-      // }
+    //   const subscribedChannelIds = subscriptions.map(sub => sub.channelId);
+    //   whereCondition.OR = [
+    //     { channelId: { in: subscribedChannelIds } },
+    //     { recommended: true }, // Example fallback
+    //   ];
+    // }
 
-      const whereCondition: Prisma.VideoWhereInput = {
-        AND: andCondition,
-        deleted: false,
-        setting: {
-          privacy: VideoPrivacy.PUBLIC,
+    const whereCondition: Prisma.VideoWhereInput = {
+      AND: andCondition,
+      deleted: false,
+      setting: {
+        privacy: VideoPrivacy.PUBLIC,
+      },
+      status: VideoStatus.UPLOADED,
+    };
+
+    const videos = await prisma.video.findMany({
+      where: whereCondition,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        channel: true,
+        media: {
+          select: {
+            thumbnailUrl: true,
+            muxPlaybackId: true,
+          },
         },
-        status: VideoStatus.UPLOADED,
-      };
+        state: true,
+      },
+      take: limit,
+      skip,
+    });
 
-      const videos = await prisma.video.findMany({
-        where: whereCondition,
-        orderBy: {
-          createdAt: 'desc',
+    const totalResult = await prisma.video.count({ where: whereCondition });
+
+    let data;
+    if (authUser) {
+      const channelSubscriptions = await prisma.channelSubscriber.findMany({
+        where: {
+          channelId: {
+            in: [...new Set(videos.map((_) => _.channel.id))],
+          },
+          subscriberId: authUser.userId,
         },
-        include: {
-          channel: true,
-          media: true,
-          state: true,
-        },
-        take: limit,
-        skip,
       });
 
-      const totalResult = await prisma.video.count({ where: whereCondition });
-      return {
-        data: videos,
-        totalResult,
-      };
-    } catch (error) {
-      console.error('Failed to fetch home feed videos:', error);
-      throw new Error('Could not load home feed');
+      const videoReactions = await prisma.videoReaction.findMany({
+        where: {
+          videoId: {
+            in: videos.map((_) => _.id),
+          },
+          userId: authUser.userId,
+        },
+      });
+
+      data = videos.map((video) => {
+        const channel = video.channel;
+        const isOwn = video.channel.userId === authUser.userId;
+        const reactionType = videoReactions.find((_) => _.videoId === video.id)?.type || null;
+        const isWatchLater = false;
+        const isSaved = false;
+        const isSubscribed = !!channelSubscriptions.find((_) => _.channelId === channel.id);
+
+        return {
+          id: video.id,
+          title: video.title,
+          channel: {
+            id: channel.id,
+            name: channel.name,
+            uniqueName: channel.uniqueName,
+            isSubscribed,
+          },
+          duration: video.duration,
+          media: video.media,
+          state: video.state,
+          createdAt: video.createdAt,
+          isOwn,
+          reactionType,
+          isWatchLater,
+          isSaved,
+        };
+      });
+    } else {
+      data = videos.map((video) => {
+        const channel = video.channel;
+        const isOwn = false;
+        const reactionType = null;
+        const isWatchLater = false;
+        const isSaved = false;
+        const isSubscribed = false;
+
+        return formatToPublicVideo(video, {
+          isOwn,
+          reactionType,
+          isSaved,
+          isWatchLater,
+          isSubscribed,
+        });
+      });
     }
+
+    const meta = {
+      page,
+      limit,
+      totalResult,
+    };
+    return {
+      data,
+      meta,
+    };
   }
   async getWatchVideoFromDB(authUser: IAuthUser, id: string) {
     const video = await prisma.video.findUnique({
@@ -502,9 +610,80 @@ class VideoService {
     }
 
     let data;
+    if (authUser) {
+      const channelSubscription = await prisma.channelSubscriber.findUnique({
+        where: {
+          channelId_subscriberId: {
+            channelId: video.channelId,
+            subscriberId: authUser.userId,
+          },
+        },
+      });
+
+      const videoReactions = await prisma.videoReaction.findMany({
+        where: {
+          videoId: video.id,
+          userId: authUser.userId,
+        },
+      });
+
+      const channel = video.channel;
+      const isOwn = video.channel.userId === authUser.userId;
+      const reactionType = videoReactions.find((_) => _.videoId === video.id)?.type || null;
+      const isWatchLater = false;
+      const isSaved = false;
+      const isSubscribed = !!channelSubscription;
+
+      data = {
+        id: video.id,
+        title: video.title,
+        description: video.description,
+        channel: {
+          id: channel.id,
+          name: channel.name,
+          uniqueName: channel.uniqueName,
+          isOwner: authUser.userId === channel.userId,
+          isSubscribed,
+        },
+        duration: video.duration,
+        media: video.media,
+        state: video.state,
+        setting: video.setting,
+        createdAt: video.createdAt,
+        isOwn,
+        reactionType,
+        isWatchLater,
+        isSaved,
+      };
+    } else {
+      const channel = video.channel;
+      const isOwn = false;
+      const reactionType = null;
+      const isWatchLater = false;
+      const isSaved = false;
+      const isSubscribed = false;
+
+      data = {
+        id: video.id,
+        channel: {
+          id: channel.id,
+          name: channel.name,
+          uniqueName: channel.uniqueName,
+          isSubscribed,
+        },
+        duration: video.duration,
+        media: video.media,
+        state: video.state,
+        setting: video.setting,
+        createdAt: video.createdAt,
+        isOwn,
+        reactionType,
+        isWatchLater,
+        isSaved,
+      };
+    }
 
     if (authUser) {
-      asyncProcess(authUser.userId);
       const videoReaction = await prisma.videoReaction.findUnique({
         where: {
           videoId_userId: {
@@ -515,25 +694,32 @@ class VideoService {
       });
 
       const channelSubscription = await prisma.channelSubscriber.findUnique({
-        where:{
-          channelId_subscriberId:{
-            channelId:video.channelId,
-            subscriberId:authUser.userId
-          }
-        }
-      })
+        where: {
+          channelId_subscriberId: {
+            channelId: video.channelId,
+            subscriberId: authUser.userId,
+          },
+        },
+      });
       data = {
         ...video,
         reactionType: videoReaction?.type || null,
         isSubscriber: !!channelSubscription,
+        isOwn: authUser.userId === video.channel.userId,
       };
     } else {
       data = video;
     }
 
+    asyncProcess(authUser.userId);
+
     return data;
   }
-  async getRelatedVideosFromDB(user: IAuthUser | undefined, id: string, type: ERelatedVideoType) {
+  async getRelatedVideosFromDB(
+    authUser: IAuthUser | undefined,
+    id: string,
+    type: ERelatedVideoType
+  ) {
     // Fetch the current video to get its category or tags
     const currentVideo = await prisma.video.findUnique({
       where: { id, deleted: false, status: VideoStatus.UPLOADED },
@@ -623,21 +809,236 @@ class VideoService {
       id: { not: id },
       deleted: false,
       status: VideoStatus.UPLOADED,
-      AND: andCondition,
+      // AND: andCondition,
     };
 
-    // Query related videos based on the same category (or tags if needed)
     const videos = await prisma.video.findMany({
-      // where: whereCondition,
+      where: whereCondition,
       include: {
-        media: true,
-        setting: true,
-        state: true,
         channel: true,
+        media: {
+          select: {
+            thumbnailUrl: true,
+            muxPlaybackId: true,
+          },
+        },
+        state: true,
       },
       take: 20,
     });
-    return videos;
+
+    let data;
+    if (authUser) {
+      const channelSubscriptions = await prisma.channelSubscriber.findMany({
+        where: {
+          channelId: {
+            in: [...new Set(videos.map((_) => _.channel.id))],
+          },
+          subscriberId: authUser.userId,
+        },
+      });
+
+      const videoReactions = await prisma.videoReaction.findMany({
+        where: {
+          videoId: {
+            in: videos.map((_) => _.id),
+          },
+          userId: authUser.userId,
+        },
+      });
+
+      data = videos.map((video) => {
+        const channel = video.channel;
+        const isOwn = video.channel.userId === authUser.userId;
+        const reactionType = videoReactions.find((_) => _.videoId === video.id)?.type || null;
+        const isWatchLater = false;
+        const isSaved = false;
+        const isSubscribed = !!channelSubscriptions.find((_) => _.channelId === channel.id);
+        return formatToPublicVideo(video, {
+          isOwn,
+          reactionType,
+          isWatchLater,
+          isSaved,
+          isSubscribed,
+        });
+      });
+    } else {
+      data = videos.map((video) => {
+        const isOwn = false;
+        const reactionType = null;
+        const isWatchLater = false;
+        const isSaved = false;
+        const isSubscribed = false;
+        return formatToPublicVideo(video, {
+          isOwn,
+          reactionType,
+          isWatchLater,
+          isSaved,
+          isSubscribed,
+        });
+      });
+    }
+
+    return data;
+  }
+  async getSearchVideosFromDB(
+    authUser: IAuthUser,
+    filterPayload: IVideoSearchFilterPayload,
+    paginationOptions: IPaginationOptions
+  ) {
+    const { page, skip, limit, sortBy, sortOrder } = calculatePagination(paginationOptions);
+    const { search_query, type, maxDuration, minDuration } = filterPayload;
+
+    if (!search_query?.trim()) {
+      return {
+        data: [],
+        meta: {
+          page: 1,
+          limit,
+          totalResult: 0,
+          total: 0,
+        },
+      };
+    }
+
+    const baseCondition: Prisma.VideoWhereInput = {
+      OR: [
+        { title: { contains: search_query, mode: 'insensitive' } },
+        { description: { contains: search_query, mode: 'insensitive' } },
+      ],
+      status: VideoStatus.UPLOADED,
+      setting: { privacy: VideoPrivacy.PUBLIC },
+    };
+
+    const andCondition: Prisma.VideoWhereInput[] = [baseCondition];
+    let subscribedChannelIds: string[] = [];
+
+    if (authUser) {
+      subscribedChannelIds = (
+        await prisma.channelSubscriber.findMany({
+          where: { subscriberId: authUser.userId },
+          select: { channelId: true },
+        })
+      ).map((item) => item.channelId);
+    }
+
+    // --- Optional Filters ---
+    if (type === 'watched' || type === 'unwatched') {
+      const watchedVideoIds = (
+        await prisma.watchHistoryVideo.findMany({
+          select: { id: true },
+        })
+      ).map((item) => item.id);
+
+      if (type === 'watched') {
+        andCondition.push({ id: { in: watchedVideoIds } });
+      } else {
+        andCondition.push({ id: { notIn: watchedVideoIds } });
+      }
+    }
+
+    if (type === 'subscribed') {
+      if (!authUser) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'You must be logged in.');
+      }
+
+      andCondition.push({ channelId: { in: subscribedChannelIds } });
+    }
+
+    if (type === 'recent') {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      andCondition.push({ createdAt: { gte: oneWeekAgo } });
+    }
+
+    // if (minDuration || maxDuration) {
+    //   andCondition.push({
+    //     duration: {
+    //       gte: minDuration ?? 0,
+    //       lte: maxDuration ?? Number.MAX_SAFE_INTEGER,
+    //     },
+    //   });
+    // }
+
+    const whereCondition: Prisma.VideoWhereInput = {
+      AND: andCondition,
+    };
+
+    const [total, videos] = await Promise.all([
+      prisma.video.count({ where: whereCondition }),
+      prisma.video.findMany({
+        where: whereCondition,
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limit,
+        include: this.videoInclude,
+      }),
+    ]);
+
+    let data;
+    if (authUser) {
+      const videoReactions = await prisma.videoReaction.findMany({
+        where: {
+          videoId: {
+            in: videos.map((_) => _.id),
+          },
+          userId: authUser.userId,
+        },
+      });
+
+      data = videos.map((video) => {
+        const channel = video.channel;
+        const isOwn = video.channel.userId === authUser.userId;
+        const reactionType = videoReactions.find((_) => _.videoId === video.id)?.type || null;
+        const isWatchLater = false;
+        const isSaved = false;
+        const isSubscribed = subscribedChannelIds.includes(video.channelId);
+
+        return {
+          id: video.id,
+          title: video.title,
+          channel: {
+            id: channel.id,
+            name: channel.name,
+            uniqueName: channel.uniqueName,
+            isSubscribed,
+          },
+          duration: video.duration,
+          media: video.media,
+          state: video.state,
+          createdAt: video.createdAt,
+          isOwn,
+          reactionType,
+          isWatchLater,
+          isSaved,
+        };
+      });
+    } else {
+      data = videos.map((video) => {
+        const isOwn = false;
+        const reactionType = null;
+        const isWatchLater = false;
+        const isSaved = false;
+        const isSubscribed = false;
+
+        return formatToPublicVideo(video, {
+          isOwn,
+          reactionType,
+          isSaved,
+          isWatchLater,
+          isSubscribed,
+        });
+      });
+    }
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        totalResult: data.length,
+        total,
+      },
+    };
   }
 }
 

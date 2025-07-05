@@ -1,17 +1,13 @@
-import e, { Router } from "express";
-import auth from "../../middlewares/auth";
-import { UserRole } from "../../../../prisma/generated/client";
-import channelSubscriberController from "./channel-subscriber.controller";
+import e, { Router } from 'express';
+import auth from '../../middlewares/auth';
+import { UserRole } from '../../../../prisma/generated/client';
+import channelSubscriberController from './channel-subscriber.controller';
 
-const router =Router()
+const router = Router();
 
+router.post('/', auth([UserRole.USER]), channelSubscriberController.createSubscriber);
+router.delete('/:channelId', auth([UserRole.USER]), channelSubscriberController.deleteSubscriber);
 
-router.post('/',auth([UserRole.USER]),channelSubscriberController.createSubscriber)
-router.delete('/:channelId',auth([UserRole.USER]),channelSubscriberController.deleteSubscriber)
+const channelSubscriberRouter = router;
 
-
-
-const channelSubscriberRouter = router
-
-
-export default channelSubscriberRouter
+export default channelSubscriberRouter;

@@ -3,23 +3,22 @@ import catchAsync from '../../utils/catchAsync';
 import { sendSuccessResponse } from '../../utils/response';
 import channelSubscriberService from './channel-subscriber.service';
 
-
 class ChannelSubscriberController {
   createSubscriber = catchAsync(async (req, res) => {
-    const result = await channelSubscriberService.createSubscriberIntoDB(req.user,req.body);
+    const result = await channelSubscriberService.createSubscriberIntoDB(req.user, req.body);
     sendSuccessResponse(res, {
       message: 'Channel subscribed successfully',
       statusCode: httpStatus.OK,
       data: result,
     });
   });
-   deleteSubscriber = catchAsync(async (req, res) => {
+  deleteSubscriber = catchAsync(async (req, res) => {
     const result = await channelSubscriberService.deleteSubscriberFromDB(
       req.user,
       req.params.channelId
     );
     sendSuccessResponse(res, {
-     message: 'Channel unsubscribed successfully',
+      message: 'Channel unsubscribed successfully',
       statusCode: httpStatus.OK,
       data: result,
     });

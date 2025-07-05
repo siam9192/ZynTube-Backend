@@ -23,6 +23,8 @@ datasource db {
   channelSubscriptions ChannelSubscriber[]
   playlists Playlist[]
   watchHistoryVideos WatchHistoryVideo[]
+  videoComments VideoComment[]
+  videoCommentReactions VideoCommentReaction[]
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
   @@map("user")
@@ -100,6 +102,7 @@ model  Video {
   setting VideoSetting?
   playlist PlaylistVideo[]
   watchHistories WatchHistoryVideo[]
+  comments VideoComment[]
   deleted Boolean @default(false)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt @default(now())
@@ -202,6 +205,50 @@ model ChannelSubscriber {
   @@unique([channelId, subscriberId])
   @@map("channel_subscriber")
 }
+
+model VideoComment {
+  id         String         @id @default(cuid())
+  content    String         @db.VarChar(5000)
+
+  likesCount Int @default(0)
+  dislikesCount Int @default(0)
+
+  isPinned   Boolean        @default(false)
+  isHidden   Boolean        @default(false)
+
+  parentId   String?
+  videoId    String
+  userId     String
+ 
+  parent     VideoComment?  @relation("CommentReplies", fields: [parentId], references: [id],onDelete: Cascade)
+  replies    VideoComment[] @relation("CommentReplies")
+  reactions VideoCommentReaction[]
+
+  video      Video          @relation(fields: [videoId], references: [id])
+  user       User           @relation(fields: [userId], references: [id])
+  
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@map("video_comment")
+}
+
+
+
+model VideoCommentReaction {
+ id        String       @id @default(cuid())
+ type VideoReactionType
+ commentId String
+ userId String
+ comment VideoComment @relation(fields: [commentId],references: [id],onDelete: Cascade)
+ user  User @relation(fields: [userId],references: [id],onDelete: Cascade)
+ createdAt   DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@unique([commentId,userId])
+ @@map("video_comment_reaction")
+}
+
+
 
 enum UserRole {
   USER
