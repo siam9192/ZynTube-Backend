@@ -553,6 +553,7 @@ class VideoService {
     };
   }
   async getWatchVideoFromDB(authUser: IAuthUser, id: string) {
+    
     const video = await prisma.video.findUnique({
       where: {
         id,
@@ -710,8 +711,12 @@ class VideoService {
     } else {
       data = video;
     }
-
-    asyncProcess(authUser.userId);
+   
+  //Process it if logged user exist
+   if(authUser) {
+   
+      asyncProcess(authUser.userId);
+   }
 
     return data;
   }
@@ -987,31 +992,19 @@ class VideoService {
       });
 
       data = videos.map((video) => {
-        const channel = video.channel;
         const isOwn = video.channel.userId === authUser.userId;
         const reactionType = videoReactions.find((_) => _.videoId === video.id)?.type || null;
         const isWatchLater = false;
         const isSaved = false;
         const isSubscribed = subscribedChannelIds.includes(video.channelId);
 
-        return {
-          id: video.id,
-          title: video.title,
-          channel: {
-            id: channel.id,
-            name: channel.name,
-            uniqueName: channel.uniqueName,
-            isSubscribed,
-          },
-          duration: video.duration,
-          media: video.media,
-          state: video.state,
-          createdAt: video.createdAt,
+        return  formatToPublicVideo(video, {
           isOwn,
           reactionType,
-          isWatchLater,
           isSaved,
-        };
+          isWatchLater,
+          isSubscribed,
+        });;
       });
     } else {
       data = videos.map((video) => {
