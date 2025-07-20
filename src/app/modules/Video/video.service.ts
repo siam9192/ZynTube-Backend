@@ -553,7 +553,6 @@ class VideoService {
     };
   }
   async getWatchVideoFromDB(authUser: IAuthUser, id: string) {
-    
     const video = await prisma.video.findUnique({
       where: {
         id,
@@ -711,12 +710,11 @@ class VideoService {
     } else {
       data = video;
     }
-   
-  //Process it if logged user exist
-   if(authUser) {
-   
+
+    //Process it if logged user exist
+    if (authUser) {
       asyncProcess(authUser.userId);
-   }
+    }
 
     return data;
   }
@@ -998,13 +996,13 @@ class VideoService {
         const isSaved = false;
         const isSubscribed = subscribedChannelIds.includes(video.channelId);
 
-        return  formatToPublicVideo(video, {
+        return formatToPublicVideo(video, {
           isOwn,
           reactionType,
           isSaved,
           isWatchLater,
           isSubscribed,
-        });;
+        });
       });
     } else {
       data = videos.map((video) => {

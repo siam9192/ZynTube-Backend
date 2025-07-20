@@ -116,12 +116,12 @@ class VideoController {
       data: result,
     });
   });
-  getSearchVideos =  catchAsync(async (req, res) => {
-    const filterPayload =  Pick(req.query,['search_query','type','minDuration','maxDuration'])
+  getSearchVideos = catchAsync(async (req, res) => {
+    const filterPayload = Pick(req.query, ['search_query', 'type', 'minDuration', 'maxDuration']);
     const result = await videoService.getSearchVideosFromDB(
       req.user,
-     filterPayload,
-     paginationOptionPicker(req.query)
+      filterPayload,
+      paginationOptionPicker(req.query)
     );
     sendSuccessResponse(res, {
       message: 'Related videos retrieved successfully!',

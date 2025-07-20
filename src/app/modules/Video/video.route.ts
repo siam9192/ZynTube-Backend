@@ -26,9 +26,13 @@ router.get(
   videoController.getWatchVideo
 );
 router.get('/related/:id', videoController.getRelatedVideos);
-router.get('/search',auth([UserRole.USER],{
-  providerMode:true
-}),videoController.getSearchVideos)
+router.get(
+  '/search',
+  auth([UserRole.USER], {
+    providerMode: true,
+  }),
+  videoController.getSearchVideos
+);
 const videoRouter = router;
 
 export default videoRouter;

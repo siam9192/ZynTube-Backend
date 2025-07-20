@@ -14,14 +14,11 @@ function auth(requiredRoles: UserRole[], authConfig?: { providerMode: Boolean })
     const token = req.headers.authorization?.replace('Bearer ', '');
     // checking if the token is missing
     if (!token) {
-    
       if (authConfig?.providerMode === true) {
         return next();
       }
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
-
-    
 
     // checking if the given token is valid
     let decoded;

@@ -7,6 +7,7 @@ import videoRouter from '../modules/Video/video.route';
 import videoReactionRouter from '../modules/VideoReaction/video-reaction.route';
 import channelSubscriberRouter from '../modules/ChannelSubscriber/channel-subscriber.route';
 import videoCommentRouter from '../modules/VideoComment/video-comment.route';
+import videoCommentReactionRouter from '../modules/VideoCommentReaction/video-comment-reaction.route';
 
 type TModuleRoutes = { path: string; router: IRouter }[];
 const router = Router();
@@ -34,6 +35,10 @@ const moduleRoutes: TModuleRoutes = [
   {
     path: '/video-comments',
     router: videoCommentRouter,
+  },
+  {
+    path: '/video-comment-reactions',
+    router: videoCommentReactionRouter,
   },
   {
     path: '/channel-subscribers',
