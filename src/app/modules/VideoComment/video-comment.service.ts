@@ -171,7 +171,6 @@ class VideoCommentService {
     type: EVideoCommentFilterType = EVideoCommentFilterType.ALL,
     paginationOptions: IPaginationOptions
   ) {
-    console.log(type);
     const video = await prisma.video.findUnique({
       where: {
         id: videoId,
@@ -259,8 +258,11 @@ class VideoCommentService {
           },
         },
       });
+
       data = comments.map((comment) => {
-        let reactionType = userCommentReactions.find((_) => _.id === comment.id)?.type || null;
+        let reactionType =
+          userCommentReactions.find((_) => _.commentId === comment.id)?.type || null;
+
         let isOwner = comment.userId === authUser.userId;
         return formatToPublicComment(comment, { reactionType, isOwner });
       });
@@ -318,7 +320,8 @@ class VideoCommentService {
       });
 
       data = replies.map((comment) => {
-        let reactionType = userCommentReactions.find((_) => _.id === comment.id)?.type || null;
+        let reactionType =
+          userCommentReactions.find((_) => _.commentId === comment.id)?.type || null;
         let isOwner = comment.userId === authUser.userId;
         return formatToPublicComment(comment, { reactionType, isOwner });
       });

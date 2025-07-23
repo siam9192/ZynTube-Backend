@@ -11,13 +11,16 @@ import httpStatus from '../../shared/http-status';
 import {
   ChannelStatus,
   Prisma,
+  Privacy,
   VideoPrivacy,
   VideoReactionType,
   VideoStatus,
 } from '../../../../prisma/generated/client';
 import { calculatePagination } from '../../helpers/paginationHelper';
 import {
+  EChannelPublicVideoFilterType,
   ERelatedVideoType,
+  IChannelPublicVideoFilterPayload,
   ICreateVideoPayload,
   IUpdateVideoPayload,
   IVideoSearchFilterPayload,
@@ -399,7 +402,148 @@ class VideoService {
       .deleteFile(video.media?.imagekitId || '')
       .catch((err) => console.error('Failed to delete ImageKit file:', err));
   }
+  async getChannelPublicVideosFromDB(
+    authUser: IAuthUser | undefined,
+    channelId: string,
+    filter:IChannelPublicVideoFilterPayload,
+    paginationOptions: IPaginationOptions
+    
+  ) {
 
+    // Fetch the channel
+    const channel = await prisma.channel.findUnique({
+      where: {
+        id: channelId,
+        status: ChannelStatus.ACTIVE,
+      },
+    });
+
+    if (!channel) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Channel not found');
+    }
+
+    let { page, limit, skip, sortOrder, sortBy } = calculatePagination(paginationOptions);
+    const {type} =  filter
+    switch (type) {
+      case EChannelPublicVideoFilterType.LATEST:
+        sortBy = 'createdAt';
+        sortOrder = 'desc';
+        break;
+      case EChannelPublicVideoFilterType.OLDEST:
+        sortBy = 'createdAt';
+        sortOrder = 'asc';
+        break;
+
+      case EChannelPublicVideoFilterType.POPULAR:
+        sortBy = 'viewsCount';
+        sortOrder = 'asc';
+        break;
+      default:
+      case EChannelPublicVideoFilterType.LATEST:
+        sortBy = 'createdAt';
+        sortOrder = 'desc';
+        break;
+    }
+
+    const whereCondition: Prisma.VideoWhereInput = {
+      channelId,
+      deleted: false,
+      status: VideoStatus.UPLOADED,
+      setting: {
+        privacy: Privacy.PUBLIC,
+      },
+    };
+
+    const videos = await prisma.video.findMany({
+      where: whereCondition,
+      include: {
+        channel: true,
+        media: {
+          select: {
+            thumbnailUrl: true,
+            muxPlaybackId: true,
+          },
+        },
+        state: true,
+      },
+      take: limit,
+      skip:skip,
+      orderBy: sortBy === 'views' ? {
+        state:{
+         viewsCount:sortOrder
+        }
+      }:{
+        [sortBy]:sortOrder
+      }
+    });
+    const totalResult =  await prisma.video.count({
+      where:whereCondition
+    })
+
+    let data;
+    if (authUser) {
+      const channelSubscriptions = await prisma.channelSubscriber.findMany({
+        where: {
+          channelId: {
+            in: [...new Set(videos.map((_) => _.channel.id))],
+          },
+          subscriberId: authUser.userId,
+        },
+      });
+
+      const videoReactions = await prisma.videoReaction.findMany({
+        where: {
+          videoId: {
+            in: videos.map((_) => _.id),
+          },
+          userId: authUser.userId,
+        },
+      });
+
+      data = videos.map((video) => {
+        const channel = video.channel;
+        const isOwn = video.channel.userId === authUser.userId;
+        const reactionType = videoReactions.find((_) => _.videoId === video.id)?.type || null;
+        const isWatchLater = false;
+        const isSaved = false;
+        const isSubscribed = !!channelSubscriptions.find((_) => _.channelId === channel.id);
+        return formatToPublicVideo(video, {
+          isOwn,
+          reactionType,
+          isWatchLater,
+          isSaved,
+          isSubscribed,
+        });
+      });
+    } else {
+      data = videos.map((video) => {
+        const isOwn = false;
+        const reactionType = null;
+        const isWatchLater = false;
+        const isSaved = false;
+        const isSubscribed = false;
+        return formatToPublicVideo(video, {
+          isOwn,
+          reactionType,
+          isWatchLater,
+          isSaved,
+          isSubscribed,
+        });
+      });
+    }
+   
+    const meta = {
+      page,
+      limit,
+      data,
+      totalResult
+    }
+
+    return {
+      data,
+      meta
+    };
+  }
   async getHomeFeedVideosFromDB(
     authUser: IAuthUser | undefined,
     category: string,
@@ -703,8 +847,11 @@ class VideoService {
       });
       data = {
         ...video,
+        channel: {
+          ...video.channel,
+          isSubscribed: !!channelSubscription,
+        },
         reactionType: videoReaction?.type || null,
-        isSubscriber: !!channelSubscription,
         isOwn: authUser.userId === video.channel.userId,
       };
     } else {

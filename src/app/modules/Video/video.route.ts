@@ -26,6 +26,7 @@ router.get(
   videoController.getWatchVideo
 );
 router.get('/related/:id', videoController.getRelatedVideos);
+router.get('/channel/:channelId',auth([UserRole.USER], { providerMode: true }),videoController.getChannelPublicVideos)
 router.get(
   '/search',
   auth([UserRole.USER], {

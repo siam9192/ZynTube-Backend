@@ -129,6 +129,19 @@ class VideoController {
       ...result,
     });
   });
+  getChannelPublicVideos = catchAsync(async (req, res) => {
+    const result = await videoService.getChannelPublicVideosFromDB(
+      req.user,
+      req.params.channelId,
+      Pick(req.params,['type']),
+      paginationOptionPicker(req.query)
+    );
+    sendSuccessResponse(res, {
+      message: 'Channel videos retrieved successfully!',
+      statusCode: httpStatus.OK,
+      ...result,
+    });
+  });
 }
 
 export default new VideoController();

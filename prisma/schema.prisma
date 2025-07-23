@@ -75,6 +75,8 @@ model Channel {
     @@map("channel")
 }
 
+
+
 model ProfileChange {
   userId                     String   @id
   user User @relation(fields: [userId],references: [id])
@@ -141,6 +143,14 @@ model VideoSetting {
   updatedAt        DateTime         @updatedAt
   video            Video            @relation(fields: [videoId], references: [id], onDelete: Cascade)
   @@map("video_setting")
+}
+
+model ChannelFeaturedVideo {
+   id    String       @id @default(cuid())
+   videoId    String 
+   video Video @relation(fields: [videoId],references: [id])
+   createdAt        DateTime         @default(now())
+   @@map("featured_video")
 }
 
 model Playlist {

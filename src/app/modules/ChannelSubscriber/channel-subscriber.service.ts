@@ -1,9 +1,10 @@
-import { ChannelStatus } from '../../../../prisma/generated/client';
+import { ChannelStatus, Prisma } from '../../../../prisma/generated/client';
 import AppError from '../../Errors/AppError';
+import { calculatePagination } from '../../helpers/paginationHelper';
 import prisma from '../../prisma';
 import httpStatus from '../../shared/http-status';
-import { IAuthUser } from '../../types';
-import { EChannelStatus } from '../Channel/channel.interface';
+import { IAuthUser, IPaginationOptions } from '../../types';
+import { ICreateChannelSubscriberPayload, IMySubscribeChannelFilterPayload } from './channel-subscriber.interface';
 
 class ChannelSubscriberService {
   async createSubscriberIntoDB(authUser: IAuthUser, payload: ICreateChannelSubscriberPayload) {
@@ -36,6 +37,7 @@ class ChannelSubscriberService {
           channelId,
           subscriberId,
         },
+        
       },
     });
     if (existing) {
@@ -115,6 +117,62 @@ class ChannelSubscriberService {
         },
       });
     });
+  }
+
+  async getMySubscribeChannelsFromDB (authUser:IAuthUser,filterPayload:IMySubscribeChannelFilterPayload,paginationOptions:IPaginationOptions) {
+    
+    const {searchTerm} =  filterPayload
+    const {page,limit,skip,sortBy,sortOrder} =  calculatePagination(paginationOptions)
+    
+    const andCondition:Prisma.ChannelSubscriberWhereInput[] = []
+   
+     
+    if(searchTerm){
+    andCondition.push({
+        channel : {
+        name:{
+          contains:searchTerm,
+          mode:'insensitive'
+        }
+      }
+    })
+    }
+
+     const whereCondition:Prisma.ChannelSubscriberWhereInput = {
+       subscriberId:authUser.userId,
+       channel:{
+        status:ChannelStatus.ACTIVE
+       },
+       AND:andCondition
+    }
+
+    
+    
+
+    const subscribes = await prisma.channelSubscriber.findMany({
+      where:whereCondition,
+      take:limit,
+      skip,
+      orderBy:{
+        [sortBy]:sortOrder
+      },
+      include:{
+        channel:true
+      }
+    })
+
+    const totalResult = await prisma.channelSubscriber.count({where:whereCondition})
+
+    const meta = {
+      page,
+      limit,
+      totalResult
+    }
+
+    return {
+      data:subscribes,
+      meta
+    }
   }
 }
 

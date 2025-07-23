@@ -12,6 +12,14 @@ class ChannelController {
       data: result,
     });
   });
+  getPublicChannel = catchAsync(async (req, res) => {
+    const result = await channelService.getPublicChannelFromDB(req.user, req.params.uniqueName);
+    sendSuccessResponse(res, {
+      message: 'Channel retrieved successfully',
+      statusCode: httpStatus.OK,
+      data: result,
+    });
+  });
 }
 
 export default new ChannelController();

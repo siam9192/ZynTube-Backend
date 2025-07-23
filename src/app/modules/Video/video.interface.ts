@@ -27,3 +27,14 @@ export interface IVideoSearchFilterPayload {
   minDuration?: string;
   maxDuration?: string;
 }
+
+export enum EChannelPublicVideoFilterType {
+  LATEST = 'latest',
+  POPULAR = 'popular',
+  OLDEST = 'oldest',
+}
+
+
+export interface IChannelPublicVideoFilterPayload {
+  type?:EChannelPublicVideoFilterType
+}
